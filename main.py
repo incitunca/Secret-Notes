@@ -1,8 +1,25 @@
 import tkinter
 from tkinter import *
+from tkinter import messagebox
 from PIL import ImageTk, Image
-import random
-import string
+import base64
+
+def encode(key, clear):
+    enc = []
+    for i in range(len(clear)):
+        key_c = key[i % len(key)]
+        enc_c = chr((ord(clear[i]) + ord(key_c)) % 256)
+        enc.append(enc_c)
+    return base64.urlsafe_b64encode("".join(enc).encode()).decode()
+
+def decode(key, enc):
+    dec = []
+    enc = base64.urlsafe_b64decode(enc).decode()
+    for i in range(len(enc)):
+        key_c = key[i % len(key)]
+        dec_c = chr((256 + ord(enc[i]) - ord(key_c)) % 256)
+        dec.append(dec_c)
+    return "".join(dec)
 
 window = Tk()
 window.title("Secret Notes")
@@ -14,18 +31,36 @@ def click_button_save():
     secret = text.get("1.0", END)
     key = entry2.get()
 
-    random_password = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+    if len(title) == 0 or len(secret) == 0 or len(key) == 0:
+        messagebox.showinfo(title="Error!", message="Please enter all information.")
+        return
 
-    with open("secret.txt", "w", encoding="utf-8") as file:
-        file.write(title + "\n")
-        file.write(random_password + "\n")
-
-    entry1.delete(0, END)
-    text.delete("1.0", END)
-    entry2.delete(0, END)
+    secret_encrypted = encode(key, secret)
+    try:
+        with open("secret.txt", "w", encoding="utf-8") as file:
+            file.write(f"\n{title}\n{secret_encrypted}")
+    except FileNotFoundError:
+        with open("secret.txt", "w", encoding="utf-8") as file:
+            file.write(f"\n{title}\n{secret_encrypted}")
+    finally:
+        entry1.delete(0, END)
+        text.delete("1.0", END)
+        entry2.delete(0, END)
 
 def click_button_decrypt():
-    pass
+    secret_encrypted = text.get("1.0", "end-1c")
+    key = entry2.get()
+
+    if len(secret_encrypted) == 0 or len(key) == 0:
+        messagebox.showinfo(title="Error!", message="Please enter all information.")
+        return
+
+    try:
+        decrypted_secret = decode(key, secret_encrypted)
+        text.delete("1.0", END)
+        text.insert("1.0", decrypted_secret)
+    except:
+        messagebox.showinfo(title="Error!", message="Please make sure of encrypted info.")
 
 #image
 img = ImageTk.PhotoImage(Image.open("topsecret.jpg"))
