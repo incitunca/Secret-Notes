@@ -28,7 +28,7 @@ window.config(padx = 10, pady = 10)
 
 def click_button_save():
     title = entry1.get()
-    secret = text.get("1.0", END)
+    secret = text.get("1.0", "end-1c")
     key = entry2.get()
 
     if len(title) == 0 or len(secret) == 0 or len(key) == 0:
@@ -48,19 +48,37 @@ def click_button_save():
         entry2.delete(0, END)
 
 def click_button_decrypt():
-    secret_encrypted = text.get("1.0", "end-1c")
     key = entry2.get()
 
-    if len(secret_encrypted) == 0 or len(key) == 0:
-        messagebox.showinfo(title="Error!", message="Please enter all information.")
+    if len(key) == 0:
+        messagebox.showinfo(title="Error!", message="Please enter master key.")
         return
 
     try:
-        decrypted_secret = decode(key, secret_encrypted)
+        with open("secret.txt", "r", encoding="utf-8") as file:
+            lines = file.read().splitlines()
+
+        lines = [line for line in lines if line != ""]
+
+        if len(lines) < 2:
+            messagebox.showinfo(title="Error!", message="secret.txt format is wrong or empty.")
+            return
+
+        title_from_file = lines[0]
+        secret_encrypted_from_file = lines[1]
+
+        decrypted_secret = decode(key, secret_encrypted_from_file)
+
         text.delete("1.0", END)
         text.insert("1.0", decrypted_secret)
+
+        entry1.delete(0, END)
+        entry1.insert(0, title_from_file)
+
+    except FileNotFoundError:
+        messagebox.showinfo(title="Error!", message="secret.txt not found.")
     except:
-        messagebox.showinfo(title="Error!", message="Please make sure of encrypted info.")
+        messagebox.showinfo(title="Error!", message="Wrong master key or corrupted data.")
 
 #image
 img = ImageTk.PhotoImage(Image.open("topsecret.jpg"))
@@ -99,7 +117,7 @@ button1 = tkinter.Button(text = "Save & Encrypt", command = click_button_save)
 button1.pack()
 
 #button2
-button2 = tkinter.Button(text = "Decrypt", command = click_button_save)
+button2 = tkinter.Button(text = "Decrypt", command = click_button_decrypt)
 button2.pack()
 
 window.mainloop()
